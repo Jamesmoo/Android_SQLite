@@ -20,6 +20,8 @@ public class Contact {
     private String _email;
     private String _phone;
 
+    public Contact(){}
+
     public Contact(int id, String name, String email, String phone){
         _id = id;
         _name = name;

@@ -5,16 +5,20 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseErrorHandler;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by jamesadams on 12/23/15.
  * based of the tutorial found here: http://www.androidhive.info/2011/11/android-sqlite-database-tutorial/
  */
-public class DatabaseHandler extends SQLiteOpenHelper {
+public class ContactsDatabaseHandler extends SQLiteOpenHelper {
+    private final String TAG = "SQLiteDBTest";
 
     //Database version
     private static final int DATABASE_VERSION = 1;
@@ -33,7 +37,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
 
 
-    public DatabaseHandler(Context context) {
+    public ContactsDatabaseHandler(Context context) {
         super(context, DATABASE_NAME,null, DATABASE_VERSION);
     }
 
@@ -43,8 +47,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
      */
     @Override
     public void onCreate(SQLiteDatabase db) {
-        //SQL statement that creates the table
-        String CREATE_CONTACTS_TABLE = "CREATE TABLE " + TABLE_NAME + "("
+
+        //SQL statement that creates the table only if the table does not exist
+        String CREATE_CONTACTS_TABLE = "CREATE TABLE IF NOT EXISTS" + TABLE_NAME + " ("
                                         + KEY_ID    + " INTEGER PRIMARY KEY, "
                                         + KEY_NAME  + " TEXT, "
                                         + KEY_EMAIL + " TEXT, "
@@ -151,8 +156,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     }
 
 
+    //this is an alternate way to get a count from a table without using SELECT COUNT(*)
     public int getContactsCount() {
-        //TODO: does SQLite support SELECT COUNT(*) ?
+
         String countQuery = "SELECT  * FROM " + TABLE_NAME;
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(countQuery, null);
@@ -161,6 +167,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
         // return count
         return cursor.getCount();
     }
+
 
     public int updateContact(Contact contact) {
         SQLiteDatabase db = this.getWritableDatabase();
@@ -180,10 +187,31 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     public void deleteContact(Contact contact) {
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete(TABLE_NAME, KEY_ID + " = ?",
-                new String[] {
+                new String[]{
                         String.valueOf(contact.get_id())
                 });
 
         db.close();
     }
+
+    /*
+     * this method
+     */
+    public boolean doesTableAlreadyHaveEntries(){
+        boolean tableExists = false;
+
+        String countQuery = "SELECT count(*) FROM " + DATABASE_NAME + " WHERE type='table' AND name='"+ TABLE_NAME + "'";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(countQuery, null);
+        cursor.close();
+
+        // return count
+        int count =  cursor.getCount();
+        if(count > 0){
+            tableExists = true;
+        }
+
+        return tableExists;
+    }
+
 }

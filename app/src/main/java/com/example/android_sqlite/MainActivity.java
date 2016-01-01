@@ -36,38 +36,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void setupDatabaseWithInitialTestValues(ContactsDatabaseHandler db){
 
-        //for loop to create records
-        for (int i=0; i <20; i++){
-
-            String name = generateRandomName();
-            String email = name + i + "@test.com";
-            String phoneNumber = Integer.toString((int) Math.random() * 10000);
-
-            try{
-                db.addContact(new Contact(i, name, email, phoneNumber));
-            }
-            catch (SQLiteException e){
-                Log.d(TAG, "SQLite Error: " + e);
-                Log.d(TAG,"SQLite Error: at insert=" + i );
-                break;
-            }
-        }
-    }
-
-    private String generateRandomName(){
-        String name = "";
-
-        //generate 10 random characters and put them in a string, this is the name
-        for (int i=0; i < 10; i++){
-            Random r = new Random();
-            char c = (char)(r.nextInt(26) + 'a');
-            name += Character.toString(c);
-        }
-        Log.d(TAG, "Random name generated = " + name);
-        return name;
-    }
 
 
 

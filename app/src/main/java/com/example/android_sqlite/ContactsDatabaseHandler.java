@@ -49,7 +49,7 @@ public class ContactsDatabaseHandler extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
 
         //SQL statement that creates the table only if the table does not exist
-        String CREATE_CONTACTS_TABLE = "CREATE TABLE IF NOT EXISTS" + TABLE_NAME + " ("
+        String CREATE_CONTACTS_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " ("
                                         + KEY_ID    + " INTEGER PRIMARY KEY, "
                                         + KEY_NAME  + " TEXT, "
                                         + KEY_EMAIL + " TEXT, "
@@ -100,6 +100,8 @@ public class ContactsDatabaseHandler extends SQLiteOpenHelper {
 
     public Contact getContact(int id) {
         SQLiteDatabase db = this.getReadableDatabase();
+        Contact contact = null;
+
 
         Cursor cursor = db.query(TABLE_NAME, new String[]{
                         KEY_ID,
@@ -108,20 +110,29 @@ public class ContactsDatabaseHandler extends SQLiteOpenHelper {
                         KEY_PHONE}, KEY_ID + "=?",
                 new String[]{String.valueOf(id)}, null, null, null, null);
 
+
         if (cursor != null) {
             cursor.moveToFirst();
+            Log.d(TAG, "Cursor Record Finder: " + cursor.getCount());
+
+            //cursor.getString is the result coming from the database, and using the result values parse
+            //them into a Contact object
+            //if the cursor has a record place in a return result
+
+            if (cursor.getCount() == 1){
+                contact = new Contact(Integer.parseInt(cursor.getString(0)),
+                        cursor.getString(1),
+                        cursor.getString(2),
+                        cursor.getString(3));
+            }
+            else if (cursor.getCount() == 0){
+                Log.d(TAG, "No Records found for ID : " + id);
+            }
         }
 
-        //cursor.getString is the result coming from the database, and using the result values parse
-        //them into a Contact object
-        Contact contact = new Contact(Integer.parseInt(cursor.getString(0)),
-                            cursor.getString(1),
-                            cursor.getString(2),
-                            cursor.getString(3));
-
-        // return contact
         return contact;
     }
+
 
     // Getting All Contacts
     public List<Contact> getAllContacts() {
@@ -162,10 +173,10 @@ public class ContactsDatabaseHandler extends SQLiteOpenHelper {
         String countQuery = "SELECT  * FROM " + TABLE_NAME;
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(countQuery, null);
+        int count = cursor.getCount();
         cursor.close();
 
-        // return count
-        return cursor.getCount();
+        return count;
     }
 
 
@@ -174,8 +185,8 @@ public class ContactsDatabaseHandler extends SQLiteOpenHelper {
 
         ContentValues values = new ContentValues();
         values.put(KEY_NAME, contact.get_name());
-        values.put(KEY_NAME, contact.get_email());
-        values.put(KEY_NAME, contact.get_phone());
+        values.put(KEY_EMAIL, contact.get_email());
+        values.put(KEY_PHONE, contact.get_phone());
 
         // updating row
         return db.update(TABLE_NAME, values, KEY_ID + " = ?",
@@ -197,25 +208,34 @@ public class ContactsDatabaseHandler extends SQLiteOpenHelper {
     /*
      * this method
      */
-    public boolean doesTableAlreadyHaveEntries(){
+    public boolean doesTableExist(){
         boolean tableExists = false;
 
-        String countQuery = "SELECT count(*) FROM " + DATABASE_NAME + " WHERE type='table' AND name='"+ TABLE_NAME + "'";
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery(countQuery, null);
-        cursor.close();
+        String checkTable = "SELECT name FROM " + DATABASE_NAME + " WHERE tbl_name = '" + TABLE_NAME + "';";
 
-        // return count
-        int count =  cursor.getCount();
-        if(count > 0){
-            tableExists = true;
+        try{
+            SQLiteDatabase db = this.getReadableDatabase();
+            Cursor cursor = db.rawQuery(checkTable, null);
+            cursor.close();
+
+            // return count
+            String cursorResult = cursor.getString(0);
+            Log.d(TAG, "Cursor String 0: " + cursorResult);
+            Log.d(TAG, "Cursor count: " + cursor.getCount());
+            if (cursor == null){
+                Log.d(TAG, "Cursor is null");
+            }
+
         }
+        catch(SQLiteException e){
+            Log.d(TAG, "Exception, table obviously does not exist");
+        }
+
 
         return tableExists;
     }
 
-    public void setupDatabaseWithInitialTestValues(ContactsDatabaseHandler db){
-
+    public void setupDatabaseWithInitialTestValues(){
         //for loop to create records
         for (int i=0; i <20; i++){
 
@@ -224,7 +244,7 @@ public class ContactsDatabaseHandler extends SQLiteOpenHelper {
             String phoneNumber = Integer.toString((int) Math.random() * 10000);
 
             try{
-                db.addContact(new Contact(i, name, email, phoneNumber));
+                this.addContact(new Contact(i, name, email, phoneNumber));
             }
             catch (SQLiteException e){
                 Log.d(TAG, "SQLite Error: " + e);
@@ -234,7 +254,8 @@ public class ContactsDatabaseHandler extends SQLiteOpenHelper {
         }
     }
 
-    private String generateRandomName(){
+
+    public String generateRandomName(){
         String name = "";
 
         //generate 10 random characters and put them in a string, this is the name
